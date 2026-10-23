@@ -1,0 +1,46 @@
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+
+app = Flask(__name__)
+app.secret_key = 'super_secret_key_here'  # مفتاح تشفير الجلسات
+
+# بيانات وهمية للتجربة (في التطبيق الحقيقي تستخدم قاعدة بيانات وكلمات مرور مشفرة)
+USERS = {
+    "user1": "password1",
+}
+
+# 1. مسار صفحة تسجيل الدخول
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        # التحقق من صحة البيانات
+        if username in USERS and USERS[username] == password:
+            session['user'] = username  # بدء الجلسة
+            flash('تم تسجيل الدخول بنجاح!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'danger')
+            
+    return render_template('login.html')
+
+# 2. مسار لوحة التحكم (صفحة محمية)
+@app.route('/dashboard')
+def dashboard():
+    # التحقق من وجود جلسة نشطة
+    if 'user' not in session:
+        flash('يرجى تسجيل الدخول أولاً للوصول لهذه الصفحة', 'warning')
+        return redirect(url_for('login'))
+        
+    return f"مرحباً بك يا {session['user']}! <br> <a href='/logout'>تسجيل الخروج</a>"
+
+# 3. مسار تسجيل الخروج
+@app.route('/logout')
+def logout():
+    session.pop('user', None)  # إنهاء الجلسة وحذف البيانات
+    flash('تم تسجيل الخروج بنجاح', 'info')
+    return redirect(url_for('login'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
